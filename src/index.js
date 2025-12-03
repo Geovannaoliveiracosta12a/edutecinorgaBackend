@@ -17,20 +17,33 @@ app.get("/", (request, response) => {
     response.json(persons)
 })
 
-app.post("/cadastrar", (request, response) =>{
-    const {name, email, age, nickname, password} =request.body.user
+app.post("/cadastrar", (request, response) => {
+    const { name, email, age, nickname, password } = request.body.user
 
-    const insertCommand = `
-        INSERT INTO inorga(name, email, age, nickname, password)
-        VALUES (?, ?, ?, ?, ?)
-    `
+    const checkEmail = `SELECT * FROM inorga WHERE email = ?`
 
-    database.query(insertCommand, [name, email, age, nickname, password], (error) => {
-        if(error){
+    database.query(checkEmail, [email], (error, results) => {
+        if (error) {
             console.log(error)
-            return
+            return response.status(500).json({ error: "Erro no servidor." })
         }
-        response.status(201).json({ message: "Usuário cadastrado com sucesso!"})
+
+        if (results.length > 0) {
+            return response.status(400).json({ message: "Este email já está cadastrado." })
+        }
+
+        const insertCommand = `
+            INSERT INTO inorga(name, email, age, nickname, password)
+            VALUES (?, ?, ?, ?, ?)
+        `
+
+        database.query(insertCommand, [name, email, age, nickname, password], (error) => {
+            if (error) {
+                console.log(error)
+                return response.status(500).json({ error: "Erro ao cadastrar usuário." })
+            }
+            response.status(201).json({ message: "Usuário cadastrado com sucesso!" })
+        })
     })
 })
 
